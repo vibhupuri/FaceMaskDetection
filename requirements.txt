@@ -1,3 +1,3 @@
 tensorflow<=2.19.0
-PIL
+Pillow
 cv2
