@@ -57,7 +57,7 @@ def streamlit_app():
             st.error(f"Error processing image: {str(e)}")
     else:
         st.write("Debug: No image uploaded yet")
-if __name__ == "__main__":Add commentMore actions
+if __name__ == "__main__":
     import sys
     if "streamlit" in sys.modules and sys.argv[0].endswith("streamlit_app.py"):
         print("Starting Streamlit app...")
