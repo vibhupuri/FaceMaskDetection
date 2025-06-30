@@ -1,44 +1,3 @@
-import streamlit as st
-import tensorflow as tf
-import numpy as np
-import cv2
-from PIL import Image
-
-# Define constants
-IMG_SIZE = (224, 224)  
-CLASS_MAP = {"with_mask": 0, "without_mask": 1, "mask_weared_incorrect": 2}
-NUM_CLASSES = len(CLASS_MAP)
-
-# Define loss functions for model loading
-def box_loss(y_true, y_pred):
-    # y_true and y_pred are tensors for boxes_output_reshape: (batch_size, 10, 4)
-    y_true = tf.cast(y_true, tf.float32)
-    y_pred = tf.cast(y_pred, tf.float32)
-    
-    # Debugging: Print shapes and dtypes
-    tf.print("box_true shape:", tf.shape(y_true), "dtype:", y_true.dtype)
-    tf.print("box_pred shape:", tf.shape(y_pred), "dtype:", y_pred.dtype)
-    
-    # MSE loss
-    loss = tf.reduce_mean(tf.square(y_true - y_pred), axis=[1, 2])
-    return loss
-
-def class_loss(y_true, y_pred):
-    # y_true: (batch_size, 10), y_pred: (batch_size, 10, 3)
-    y_true = tf.cast(y_true, tf.int32)
-    y_pred = tf.cast(y_pred, tf.float32)
-    
-    # Debugging: Print shapes and dtypes
-    tf.print("class_true shape:", tf.shape(y_true), "dtype:", y_true.dtype)
-    tf.print("class_pred shape:", tf.shape(y_pred), "dtype:", y_pred.dtype)
-    
-    # Convert to one-hot and apply mask for padded objects
-    valid_mask = tf.cast(y_true != 0, tf.float32)
-    y_true_one_hot = tf.one_hot(y_true, depth=NUM_CLASSES)
-    loss = tf.keras.losses.categorical_crossentropy(y_true_one_hot, y_pred)
-    loss = tf.reduce_mean(loss * valid_mask, axis=1)
-    return loss
-
 def streamlit_app():
     st.write("Debug: Streamlit app started")
     st.title("Face Mask Detection")
@@ -58,9 +17,14 @@ def streamlit_app():
         
         try:
             image = Image.open(uploaded_file)
+            # Convert RGBA to RGB if necessary
+            if image.mode == "RGBA":
+                image = image.convert("RGB")
             image_resized = image.resize(IMG_SIZE)
             img_array = tf.keras.preprocessing.image.img_to_array(image_resized) / 255.0
+            st.write(f"Debug: img_array shape: {img_array.shape}, dtype: {img_array.dtype}")
             img_array = np.expand_dims(img_array, axis=0)
+            st.write(f"Debug: Input shape to model: {img_array.shape}")
             
             # Predict
             pred_boxes, pred_labels = model.predict(img_array)
@@ -93,11 +57,3 @@ def streamlit_app():
             st.error(f"Error processing image: {str(e)}")
     else:
         st.write("Debug: No image uploaded yet")
-
-if __name__ == "__main__":
-    import sys
-    if "streamlit" in sys.modules and sys.argv[0].endswith("streamlit_app.py"):
-        print("Starting Streamlit app...")
-        streamlit_app()
-    else:
-        print("To run the Streamlit app, use: `streamlit run streamlit_app.py`")
