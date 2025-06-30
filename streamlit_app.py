@@ -31,3 +31,6 @@ def streamlit_app():
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
         
         st.image(img, caption="Predicted Image", use_column_width=True)
+if __name__ == "__main__":
+    print("Starting Streamlit app...")
+    streamlit_app()
