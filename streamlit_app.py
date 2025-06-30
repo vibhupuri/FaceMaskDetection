@@ -3,7 +3,41 @@ import tensorflow as tf
 import numpy as np
 import cv2
 from PIL import Image
+# Define constants
+IMG_SIZE = (224, 224)  
+CLASS_MAP = {"with_mask": 0, "without_mask": 1, "mask_weared_incorrect": 2}
+NUM_CLASSES = len(CLASS_MAP)
 
+# Define loss functions for model loading
+def box_loss(y_true, y_pred):
+    # y_true and y_pred are tensors for boxes_output_reshape: (batch_size, 10, 4)
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    
+    # Debugging: Print shapes and dtypes
+    tf.print("box_true shape:", tf.shape(y_true), "dtype:", y_true.dtype)
+    tf.print("box_pred shape:", tf.shape(y_pred), "dtype:", y_pred.dtype)
+    
+    # MSE loss
+    loss = tf.reduce_mean(tf.square(y_true - y_pred), axis=[1, 2])
+    return loss
+
+def class_loss(y_true, y_pred):
+    # y_true: (batch_size, 10), y_pred: (batch_size, 10, 3)
+    y_true = tf.cast(y_true, tf.int32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    
+    # Debugging: Print shapes and dtypes
+    tf.print("class_true shape:", tf.shape(y_true), "dtype:", y_true.dtype)
+    tf.print("class_pred shape:", tf.shape(y_pred), "dtype:", y_pred.dtype)
+    
+    # Convert to one-hot and apply mask for padded objects
+    valid_mask = tf.cast(y_true != 0, tf.float32)
+    y_true_one_hot = tf.one_hot(y_true, depth=NUM_CLASSES)
+    loss = tf.keras.losses.categorical_crossentropy(y_true_one_hot, y_pred)
+    loss = tf.reduce_mean(loss * valid_mask, axis=1)
+    return loss
+    
 def streamlit_app():
     st.write("Debug: Streamlit app started")
     st.title("Face Mask Detection")
